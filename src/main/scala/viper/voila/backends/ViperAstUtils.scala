@@ -44,6 +44,18 @@ object ViperAstUtils {
             val updatedCtx = ctx.updateContext(ctx.c ++ q.variables.map(_.name))
 
             (sanitizedQuantExp, updatedCtx)
+
+          case (h: vpr.Havocall, ctx) =>
+
+            val sanitizedHavocStmt: vpr.Stmt =
+//              copy(variables)(this.pos, this.info, this.errT)
+              h.copy(
+                h.vars map (v => v.copy(name = rename(v.name))(v.pos, v.info, v.errT)))(h.pos, h.info, h.errT)
+
+            val updatedCtx = ctx.updateContext(ctx.c ++ h.vars.map(_.name))
+
+            (sanitizedHavocStmt, updatedCtx)
+
           case (v: vpr.LocalVar, ctx) if ctx.c.contains(v.name) =>
             val sanitizedVar =
               v.copy(name = rename(v.name), v.typ)(v.pos, v.info, v.errT)

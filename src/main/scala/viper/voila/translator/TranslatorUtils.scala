@@ -267,13 +267,25 @@ object TranslatorUtils {
     }
 
     override def havoc(id: T, label: vpr.Label)(wrapper: QuantifierWrapper.Wrapper): vpr.Stmt = {
-      if (!VoilaGlobalState.config.disableSiliconSpecificHavockingCode()) {
+      if (VoilaGlobalState.config.useNewSiliconHavoc()) {
+        // hack to piece together the havocall statement.
+        // Create the inhale forall statement, as we'd do without havocall
+        val exhale = exhaleFootprint(id)(wrapper)
+        val res = exhale.exp match {
+          case vpr.Forall(vars, _, body) =>
+            vpr.Havocall(vars, None, body.asInstanceOf[vpr.PredicateAccessPredicate].loc)()
+          case vpr.PredicateAccessPredicate(loc, _) =>
+            vpr.Havoc(None, loc)()
+        }
+        ViperAstUtils.sanitizeBoundVariableNames(res)
+      } else if (!VoilaGlobalState.config.disableSiliconSpecificHavockingCode()) {
         viper.silicon.rules.executor.hack407_havoc_all_resources_method_call(memberName(idToName(id)))
       } else {
-        vpr.Seqn(
+        val sqn = vpr.Seqn(
           Vector(exhaleFootprint(id)(wrapper), inhaleFootprint(id)(wrapper)),
           Vector.empty
         )()
+        ViperAstUtils.sanitizeBoundVariableNames(sqn)
       }
     }
   }

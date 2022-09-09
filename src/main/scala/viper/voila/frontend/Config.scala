@@ -79,6 +79,12 @@ class Config(arguments: Seq[String])
       "By default, Voila generates special Viper code that allows Silicon to efficiently havoc resources, which " +
         "can tremendously improve Voila's performance. See also Silicon option --disableHavocHack407 and the " +
         "corresponding Silicon issue #407.",
+    default = Some(true),
+    noshort = true)
+
+  def useNewSiliconHavoc: ScallopOption[Boolean] = opt[Boolean](
+    name = "useNewSiliconHavoc",
+    descr = "Use havoc and havocall statements (experimentally added to Silicon)",
     default = Some(false),
     noshort = true)
 

@@ -453,7 +453,16 @@ trait StabilizationComponent { this: PProgramToViperTranslator =>
           ))())
 
     override def havoc(id: PRegion, label: vpr.Label)(wrapper: QuantifierWrapper.Wrapper): Stmt = {
-      if (!VoilaGlobalState.config.disableSiliconSpecificHavockingCode()) {
+      if (VoilaGlobalState.config.useNewSiliconHavoc()) {
+        val pred = vpr.PredicateAccess(args = wrapper.args, predicateName = id.id.name)()
+        val res = wrapper match {
+          case QuantifierWrapper.QuantWrapper(decls, args, _) =>
+            vpr.Havocall(decls, None, pred)()
+          case QuantifierWrapper.UnitWrapper(args) =>
+            vpr.Havoc(None, pred)()
+        }
+        ViperAstUtils.sanitizeBoundVariableNames(res)
+      } else if (!VoilaGlobalState.config.disableSiliconSpecificHavockingCode()) {
         viper.silicon.rules.executor.hack407_havoc_all_resources_method_call(id.id.name)
       } else {
         val vprRegionArguments = wrapper.args
@@ -489,13 +498,14 @@ trait StabilizationComponent { this: PProgramToViperTranslator =>
         /* inhale ∀ as · acc(R(as), π) */
         val vprInhaleAllRegionInstances = vpr.Inhale(vprWrappedRegionAssertion)()
 
-        vpr.Seqn(
+        val sqn = vpr.Seqn(
           Vector(
             vprExhaleAllRegionInstances,
             vprInhaleAllRegionInstances
           ),
           Vector.empty
         )()
+        ViperAstUtils.sanitizeBoundVariableNames(sqn)
       }
     }
 
